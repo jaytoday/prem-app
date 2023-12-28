@@ -1,11 +1,15 @@
-import RangeSlider from "react-range-slider-input";
-import "react-range-slider-input/dist/style.css";
-import { shallow } from "zustand/shallow";
-import usePremChatStore from "shared/store/prem-chat";
 import LeftArrowIcon from "shared/components/LeftArrowIcon";
-import { RightSidebarProps } from "../types";
+import RangeSlider from "shared/components/RangeSlider";
+import usePremChatStore from "shared/store/prem-chat";
+import { shallow } from "zustand/shallow";
 
-const RightSidebar = ({ setRightSidebar }: RightSidebarProps) => {
+import type { ChatRightSidebarProps } from "../types";
+
+const RightSidebar = ({
+  setRightSidebar,
+  resetPromptTemplate,
+  resetChatServiceUrl,
+}: ChatRightSidebarProps) => {
   const {
     temperature,
     setTemperature,
@@ -19,6 +23,10 @@ const RightSidebar = ({ setRightSidebar }: RightSidebarProps) => {
     setN,
     presence_penalty,
     setPresencePenalty,
+    promptTemplate,
+    setPromptTemplate,
+    setChatServiceUrl,
+    chatServiceUrl,
   } = usePremChatStore(
     (state) => ({
       temperature: state.temperature,
@@ -33,8 +41,12 @@ const RightSidebar = ({ setRightSidebar }: RightSidebarProps) => {
       setN: state.setN,
       presence_penalty: state.presence_penalty,
       setPresencePenalty: state.setPresencePenalty,
+      promptTemplate: state.promptTemplate,
+      setPromptTemplate: state.setPromptTemplate,
+      setChatServiceUrl: state.setChatServiceUrl,
+      chatServiceUrl: state.chatServiceUrl,
     }),
-    shallow
+    shallow,
   );
 
   return (
@@ -46,7 +58,7 @@ const RightSidebar = ({ setRightSidebar }: RightSidebarProps) => {
         >
           <LeftArrowIcon className="rotate-180" />
         </button>
-        <span>Close Sidebar</span>
+        <span className="text-grey-300">Close Sidebar</span>
       </div>
       <div className="-mx-4 opacity-30" />
       <ul className="mb-[18px] mt-[42px] right-sidebar__list overflow-y-auto scrollbar-none">
@@ -149,6 +161,40 @@ const RightSidebar = ({ setRightSidebar }: RightSidebarProps) => {
             step={0.1}
             onInput={(value: number[]) => setFrequencyPenalty(value[1])}
           />
+        </li>
+
+        <li>
+          <p>
+            <span>Prompt Template</span>
+            <button className="text-grey-400" onClick={resetPromptTemplate}>
+              Reset
+            </button>
+          </p>
+          <p className="w-full">
+            <textarea
+              className="w-full rounded p-2 text-white"
+              value={promptTemplate}
+              onChange={(e) => setPromptTemplate(e.target.value)}
+              rows={5}
+            ></textarea>
+          </p>
+        </li>
+
+        <li>
+          <p className="!mb-[18px]">
+            <span>Chat Service URL</span>
+            <button className="text-grey-400" onClick={resetChatServiceUrl}>
+              Reset
+            </button>
+          </p>
+          <p className="w-full">
+            <textarea
+              className="w-full rounded p-2 text-white z-10"
+              value={chatServiceUrl}
+              onChange={(e) => setChatServiceUrl(e.target.value)}
+              rows={2}
+            />
+          </p>
         </li>
       </ul>
     </div>

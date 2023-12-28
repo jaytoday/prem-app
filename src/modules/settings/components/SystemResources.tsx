@@ -1,13 +1,13 @@
-import useSystemStats from "shared/hooks/useSystemStats";
-import memory from "assets/images/memory.svg";
 import cpu from "assets/images/cpu.svg";
+import memory from "assets/images/memory.svg";
 import storage from "assets/images/storage.svg";
+import useSystemStats from "shared/hooks/useSystemStats";
 
-const CPUResources = () => {
-  const { data: response } = useSystemStats();
+const SystemResources = () => {
+  const { data } = useSystemStats();
   return (
     <div className="settings-card">
-      <h3>Resources</h3>
+      <h2 className="text-white mb-4 text-lg">Resources</h2>
       <ul className="flex items-end max-lg:flex-wrap gap-6">
         <li>
           <div className="flex flex-wrap justify-between">
@@ -16,13 +16,13 @@ const CPUResources = () => {
               Memory&nbsp;
             </span>
             <span>
-              {response?.data?.memory_usage} / {response?.data?.memory_limit} GiB
+              {data?.memory_usage} / {data?.memory_limit} GiB
             </span>
           </div>
           <div className="progress">
             <div
               className="progress-container"
-              style={{ width: `${response?.data?.memory_percentage}%` }}
+              style={{ width: `${data?.memory_percentage}%` }}
             ></div>
           </div>
         </li>
@@ -32,13 +32,10 @@ const CPUResources = () => {
               <img src={cpu} alt="cpu" className="w-4 h-4" />
               CPU&nbsp;
             </span>
-            <span>{response?.data?.cpu_percentage}%</span>
+            <span>{data?.cpu_percentage}%</span>
           </div>
           <div className="progress">
-            <div
-              className="progress-container"
-              style={{ width: `${response?.data?.cpu_percentage}%` }}
-            ></div>
+            <div className="progress-container" style={{ width: `${data?.cpu_percentage}%` }}></div>
           </div>
         </li>
         <li>
@@ -48,13 +45,13 @@ const CPUResources = () => {
               Storage&nbsp;
             </span>
             <span>
-              {response?.data?.storage_usage} / {response?.data?.storage_limit} GiB
+              {data?.storage_usage} / {data?.storage_limit} GiB
             </span>
           </div>
           <div className="progress">
             <div
               className="progress-container"
-              style={{ width: `${response?.data?.storage_percentage}%` }}
+              style={{ width: `${data?.storage_percentage}%` }}
             ></div>
           </div>
         </li>
@@ -63,4 +60,4 @@ const CPUResources = () => {
   );
 };
 
-export default CPUResources;
+export default SystemResources;

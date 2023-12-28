@@ -1,71 +1,67 @@
-import { useMutation } from "@tanstack/react-query";
-import Spinner from "shared/components/Spinner";
-import { ServiceStateProps } from "../types";
-import deleteService from "../api/deleteService";
-import DeleteIcon from "shared/components/DeleteIcon";
-import { useState } from "react";
-import WarningModal from "./WarningModal";
-import PrimaryButton from "shared/components/PrimaryButton";
 import { toast } from "react-toastify";
+import DeleteIcon from "shared/components/DeleteIcon";
+import PrimaryButton from "shared/components/PrimaryButton";
+import Spinner from "shared/components/Spinner";
 import useStartService from "shared/hooks/useStartService";
-import useBodyLock from "shared/hooks/useBodyLock";
+
+import useDeleteService from "../../../shared/hooks/useDeleteService";
+import type { ServiceStateProps } from "../types";
+
+import WarningModal from "./WarningModal";
+
+type DeleteModalProps = {
+  openDeleteModal: boolean;
+  setOpenDeleteModal: (value: boolean) => void;
+  setBodyLocked: (value: boolean) => void;
+};
 
 const StoppedServiceState = ({
-  serviceId,
+  service,
   refetch,
-  isDetailView,
   onOpenClick,
-}: ServiceStateProps) => {
-  const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const { bodyLocked, setBodyLocked } = useBodyLock();
+  openDeleteModal,
+  setOpenDeleteModal,
+  isDetailView,
+}: ServiceStateProps & DeleteModalProps) => {
+  const { mutate: deleteMutate, isPending: isDeletePending } = useDeleteService();
+  const { mutateAsync: startMutateAsync, isPending: isStartPending } = useStartService();
 
-  const { mutate: deleteMutate, isLoading: deleteLoading } = useMutation((id: string) =>
-    deleteService(id)
-  );
-
-  const { mutate: startMutate, isLoading: startLoading } = useStartService();
-
-  const onStart = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onStart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    startMutate(serviceId, {
-      onSuccess: () => {
-        refetch();
-        onOpenClick && onOpenClick();
-        toast.success("Service started successfully");
-      },
-      onError: () => {
-        toast.error("Failed to start service");
-      },
-    });
-  };
-
-  const onDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setOpenDeleteModal(true);
-    setBodyLocked(true);
+    try {
+      await startMutateAsync({ serviceId: service.id, serviceType: service.serviceType });
+      refetch();
+      onOpenClick?.();
+      toast.success("Service started successfully");
+    } catch (error) {
+      toast.error("Failed to start service");
+    }
   };
 
   const deleteServiceHandler = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setOpenDeleteModal(false);
-    deleteMutate(serviceId, {
-      onSuccess: () => {
-        refetch();
-        toast.success("Service deleted successfully");
+    deleteMutate(
+      { serviceId: service.id, serviceType: service.serviceType },
+      {
+        onSuccess: () => {
+          refetch();
+          toast.success("Service deleted successfully");
+        },
+        onError: () => {
+          toast.error("Failed to delete service");
+        },
       },
-      onError: () => {
-        toast.error("Failed to delete service");
-      },
-    });
+    );
   };
 
   const onCancelClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setOpenDeleteModal(false);
-    setBodyLocked(false);
+    //setBodyLocked(false);
   };
 
-  if (deleteLoading || startLoading) {
+  if (isDeletePending || isStartPending) {
     return (
       <div className="flex h-full items-center justify-center">
         <Spinner className="w-5 h-5" />
@@ -75,16 +71,13 @@ const StoppedServiceState = ({
 
   return (
     <>
-      <PrimaryButton
-        className="!rounded-[14px] !px-5 !py-0 !text-[10px] !h-[30px] flex items-center"
-        onClick={onStart}
-      >
-        Open
-      </PrimaryButton>
       {isDetailView && (
-        <button onClick={onDelete}>
-          <DeleteIcon />
-        </button>
+        <PrimaryButton
+          className="!rounded-[14px] !px-5 !py-0 !text-[10px] !h-[30px] flex items-center"
+          onClick={onStart}
+        >
+          Open
+        </PrimaryButton>
       )}
       {openDeleteModal && (
         <WarningModal

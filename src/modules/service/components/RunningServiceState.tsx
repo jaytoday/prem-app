@@ -1,53 +1,22 @@
-import { useMutation } from "@tanstack/react-query";
-import Spinner from "shared/components/Spinner";
-import { ServiceStateProps } from "../types";
-import StopIcon from "shared/components/StopIcon";
-import stopService from "../api/stopService";
 import PrimaryButton from "shared/components/PrimaryButton";
-import { toast } from "react-toastify";
-import useStopService from "shared/hooks/useStopService";
-import useBodyLock from "shared/hooks/useBodyLock";
+import { useLockedBody } from "usehooks-ts";
 
-const RunningServiceState = ({
-  serviceId,
-  refetch,
-  isDetailView = false,
-  onOpenClick,
-}: ServiceStateProps) => {
-  const { mutate, isLoading } = useStopService();
-  const { bodyLocked, setBodyLocked } = useBodyLock();
+import type { ServiceStateProps } from "../types";
 
-  const onStop = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    mutate(serviceId, {
-      onSuccess: () => {
-        refetch();
-        toast.success("Service stopped successfully");
-      },
-      onError: () => {
-        toast.error("Failed to stop service");
-      },
-    });
-  };
+const RunningServiceState = ({ onOpenClick }: Pick<ServiceStateProps, "onOpenClick">) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setBodyLocked] = useLockedBody(false, "root");
 
   const onOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setBodyLocked(true);
-    onOpenClick && onOpenClick();
+    onOpenClick?.();
   };
-
-  if (isLoading) {
-    return (
-      <div className="mt-2">
-        <Spinner className="w-5 h-5" />
-      </div>
-    );
-  }
 
   return (
     <>
       <button
-        className="border-[0.5px] border-brightgray text-white rounded-[3px] py-1 px-3 text-[10px] font-proximaNova-regular"
+        className="border-[0.5px] border-grey-300 text-white rounded-[3px] py-1 px-3 text-[10px] "
         onClick={(e) => e.preventDefault()}
       >
         Running
@@ -58,11 +27,6 @@ const RunningServiceState = ({
       >
         Open
       </PrimaryButton>
-      {isDetailView && (
-        <button onClick={onStop}>
-          <StopIcon />
-        </button>
-      )}
     </>
   );
 };

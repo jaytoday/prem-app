@@ -1,71 +1,53 @@
-import { AxiosResponse } from "axios";
-import api from "shared/api/v1";
-import { DownloadMessage } from "../types";
-import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { getBackendUrlFromStore } from "shared/store/setting";
+import { isProxyEnabled } from "../../../shared/helpers/utils";
+import useSettingStore from "../../../shared/store/setting";
+import type { DownloadMessage } from "../types";
+
+const eventSources: Record<string, EventSource> = {};
+const instantiateEventSource = (backendUrl: string, serviceId: string) => {
+  if (eventSources[serviceId]) {
+    return eventSources[serviceId];
+  } else {
+    eventSources[serviceId] = new EventSource(
+      `${backendUrl}v1/download-service-stream-sse/${serviceId}`,
+    );
+  }
+};
 
 const downloadServiceStream = async (
   serviceId: string,
   onError: (err: any) => void,
   onMessage: (message: DownloadMessage) => void,
-  onceCompleted: () => void
+  onceCompleted: () => void,
 ): Promise<void> => {
-  const backendUrl = new URL(getBackendUrlFromStore());
   try {
-    //const response = await api.get(`v1/download-service/${serviceId}`);
-    //console.log(response);
-
-    const eventSource = new EventSource(`${backendUrl}v1/download-service-stream-sse/${serviceId}`);
-    eventSource.onmessage = (event) => {
-      if (!event.data) return;
-      try {
-        const parsedData = JSON.parse(event.data);
-        const status = parsedData.status;
-        if (status.includes("Digest:")) {
-          eventSource.close();
-          onceCompleted();
-          return;
-        }
-        onMessage(parsedData);
-      } catch (error) {
-        throw error;
+    const isIP = useSettingStore.getState().isIP;
+    let baseUrl = useSettingStore.getState().backendUrl;
+    if (isProxyEnabled()) {
+      if (isIP) {
+        baseUrl = `${useSettingStore.getState().backendUrl}premd/`;
+      } else {
+        baseUrl = `${window.location.protocol}//premd.${window.location.host}/`;
       }
+    }
+    instantiateEventSource(baseUrl, serviceId);
+    eventSources[serviceId].onmessage = (event) => {
+      if (!event.data) return;
+      const parsedData = JSON.parse(event.data);
+      const status = parsedData.status;
+      if (status === "Download complete") {
+        eventSources[serviceId].close();
+        onceCompleted();
+        return;
+      }
+      onMessage(parsedData);
     };
-    eventSource.onerror = (err: any) => {
-      eventSource.close();
+    eventSources[serviceId].onerror = (err: any) => {
+      eventSources[serviceId].close();
       onError(err);
     };
-    eventSource.onopen = (evt) => {
-      //evt.target?.addEventListener('message', (event) => { console.log('listener: message: ', event)})
+    eventSources[serviceId].onopen = (evt) => {
       console.log("onopen", evt);
     };
-
-    /*     eventSource.onerror = (err: any) => {
-      console.log('error', err.data);
-    };
-    eventSource.onopen = (evt) => {
-      evt.target?.addEventListener('message', (event) => { console.log('listener: message: ', event)})
-      console.log('onopen', evt);
-    }; */
-
-    /* fetchEventSource(`${backendUrl}v1/download-service-stream/${serviceId}`, {
-      method: "GET",
-      signal: ctrl.signal,
-      onmessage: (event) => {
-        console.log(event, event.data);
-        const data = JSON.parse(event.data);
-        onMessage(data);
-      },
-      onerror: (err: any) => {
-        console.log(err);
-        return onError(err);
-      },
-      onopen: (response: Response) => {
-        console.log(response);
-        console.log("stream opened");
-        return Promise.resolve();
-      }
-    }); */
   } catch (err) {
     console.log(err);
     onError(err);

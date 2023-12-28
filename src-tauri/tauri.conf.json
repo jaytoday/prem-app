@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "Prem",
-    "version": "0.0.15"
+    "version": "0.2.2"
   },
   "tauri": {
     "allowlist": {
@@ -34,11 +34,14 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "prem.tauri.dev",
+      "identifier": "io.premai.prem-app",
+      "resources": [
+        "petals/*"
+      ],
       "targets": "all"
     },
     "security": {
-      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self' img-src: 'self'"
+      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self'; img-src: 'self'; worker-src blob:;"
     },
     "systemTray": {
       "iconAsTemplate": true,
@@ -54,11 +57,14 @@
     },
     "windows": [
       {
+        "fileDropEnabled": false,
         "fullscreen": false,
-        "minHeight": 900,
-        "minWidth": 1600,
+        "height": 800,
+        "minHeight": 300,
+        "minWidth": 500,
         "resizable": true,
-        "title": "Prem App"
+        "title": "Prem App",
+        "width": 1220
       }
     ]
   }

@@ -1,23 +1,52 @@
 import searchLogo from "assets/images/search.svg";
-import { useEffect, useMemo, useState } from "react";
-import Select, { MultiValue } from "react-select";
-import { Option, SearchFilterProps } from "../types";
-import MultiValueRemove from "./MultiValueRemove";
-import { serviceSearchStyle } from "shared/helpers/utils";
 import clsx from "clsx";
-import { getBackendUrlFromStore } from "shared/store/setting";
+import { useEffect, useMemo, useState } from "react";
+import type { MultiValue } from "react-select";
+import Select from "react-select";
+import { serviceSearchStyle } from "shared/helpers/utils";
 
-const SearchFilter = ({ apps, onFilterChange, appId }: SearchFilterProps) => {
+import api from "../../../shared/api/v1";
+import type { Option, SearchFilterProps } from "../types";
+
+import MultiValueRemove from "./MultiValueRemove";
+
+const SearchFilter = ({ apps, onFilterChange }: SearchFilterProps) => {
   const [search, setSearch] = useState(new Map());
+  const [icons, setIcons] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const newSearch = new Map(apps.map((app) => [app.id, app.id === appId]));
+    (async () => {
+      try {
+        const updatedIcons: Record<string, string> = {};
+        const requests = apps.map(async (app) => {
+          const response = await api().get(app.icon.replace(/^\/+/, ""));
+          if (response.status === 200) {
+            const parser = new DOMParser();
+            const svgDOM = parser.parseFromString(response.data, "image/svg+xml");
+            svgDOM.documentElement.setAttribute("width", "16");
+            svgDOM.documentElement.setAttribute("height", "16");
+            updatedIcons[app.id] = new XMLSerializer().serializeToString(svgDOM);
+          } else {
+            console.error("Failed to fetch image for app with ID:", app.id);
+          }
+        });
+        await Promise.all(requests);
+        setIcons(updatedIcons);
+      } catch (error) {
+        console.error("An error occurred while fetching or processing icons:", error);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const newSearch = new Map(apps.map((app) => [app.id, false]));
     setSearch(newSearch);
-  }, [appId]);
+  }, [apps]);
 
   useEffect(() => {
     onFilterChange(search);
-  }, [search]);
+  }, [onFilterChange, search]);
 
   const handleSearch = (appId: string) => {
     const newSearch = new Map(search.entries());
@@ -49,8 +78,8 @@ const SearchFilter = ({ apps, onFilterChange, appId }: SearchFilterProps) => {
   if (search.size === 0) return null;
 
   return (
-    <div>
-      <div className="relative search-filter">
+    <div className="flex flex-col items-center">
+      <div className="relative search-filter w-full">
         <img
           src={searchLogo}
           alt="search"
@@ -73,7 +102,7 @@ const SearchFilter = ({ apps, onFilterChange, appId }: SearchFilterProps) => {
           }}
         />
       </div>
-      <div className="flex md:justify-center flex-wrap lg:gap-6 gap-4 mt-5">
+      <div className="flex justify-center flex-wrap gap-y-5 gap-x-6 lg:gap-x-7 mt-5 md:w-4/5">
         {apps.map((app) => (
           <div
             className={clsx("text-white", {
@@ -85,11 +114,7 @@ const SearchFilter = ({ apps, onFilterChange, appId }: SearchFilterProps) => {
               className="flex px-2 py-[6px] items-center text-sm"
               onClick={() => handleSearch(app.id)}
             >
-              <img
-                src={`${getBackendUrlFromStore()}${app.icon}`}
-                alt={app.name}
-                className="mr-2 w-4 h-4 rounded"
-              />
+              <div dangerouslySetInnerHTML={{ __html: icons?.[app.id] }} className="mr-2 rounded" />
               <span>{app.name}</span>
             </button>
           </div>

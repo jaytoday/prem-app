@@ -1,0 +1,107 @@
+.prem-chat-container .bg-lines::before {
+  @apply max-md:hidden bg-cover;
+  background-position: 0 100%;
+}
+
+.prem-chat-right-sidebar {
+  @apply bg-grey-800 flex-col px-4 flex h-screen w-[260px] max-md:absolute max-md:z-10 right-0 max-md:top-0;
+}
+
+.prem-chat {
+  @apply mt-8 border-2 border-grey-400 rounded-md;
+}
+
+.prem-chat select {
+  @apply bg-transparent  cursor-pointer border border-grey-400 text-grey-200 w-full z-10 px-4 py-[6px] appearance-none;
+}
+
+.autosize-textarea {
+  @apply bg-grey-700 text-white text-sm outline-none rounded-[29px] h-14 py-4 md:pl-[33px] md:pr-16 pr-12 pl-6 w-full min-h-14 max-h-40;
+}
+
+.autosize-textarea:-webkit-autofill,
+.autosize-textarea:-webkit-autofill:hover,
+.autosize-textarea:-webkit-autofill:active,
+.autosize-textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #302f32;
+  -webkit-box-shadow: 0 0 0 1000px #302f32 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.autosize-textarea-container {
+  @apply relative mt-4 flex flex-row;
+}
+
+.autosize-textarea-container img {
+  @apply bg-primary-light p-2 w-[35px] h-[35px] rounded-full stroke-white;
+}
+
+.autosize-textarea-container button {
+  @apply absolute md:right-[21px] right-[12px] bottom-[11px];
+}
+
+.prem-chat-bottom {
+  width: calc(100% - 259px);
+  @apply fixed z-10 mt-auto bottom-0 pb-[33px] left-auto right-0;
+}
+
+@media (max-width: 767px) {
+  .prem-chat-bottom {
+    @apply flex items-center mt-0 w-full left-0 bg-grey-900;
+  }
+
+  .prem-chat-body {
+    @apply pb-[100px] overflow-y-auto;
+  }
+}
+
+.bot-reply {
+  @apply flex mb-[40px] w-full;
+}
+
+.bot-reply .markdown-body a {
+  @apply text-[#28292d];
+}
+
+.bot-reply .markdown-body a:hover {
+  border-color: rgb(40 41 45 / 32%) !important;
+}
+
+.prem-chat-body {
+  @apply overflow-y-auto;
+}
+
+.prem-chat-body .bot-reply .markdown-body h2,
+.prem-chat-body .bot-reply .markdown-body h1 {
+  border-color: rgb(40 41 45 / 32%) !important;
+}
+
+.prem-chat-body .bot-reply .markdown-body blockquote {
+  @apply !text-white;
+}
+
+.bot-reply .markdown-body {
+  @apply p-4 w-full text-white;
+  max-width: 660px;
+  border-radius: 0 10px 10px 10px;
+  background: linear-gradient(90.54deg, #e9928e 0%, #f49893 100%);
+  box-shadow: 0 4px 27px -1.12466px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(22px);
+}
+
+.bot-reply__icon {
+  @apply bg-primary-light w-[38px] h-[38px] rounded-full flex justify-center items-center;
+}
+
+.user-reply {
+  @apply flex items-end mb-[40px];
+}
+
+.user-reply pre {
+  @apply bg-grey-100 border py-4 px-[22px] ml-auto max-w-[660px] font-sans text-sm text-grey-700 whitespace-pre-wrap;
+  box-shadow:
+    10.4294px 10.4294px 26.0736px rgba(112, 124, 151, 0.05),
+    15.6442px 15.6442px 36.5031px rgba(112, 124, 151, 0.05);
+  border-radius: 10px 10px 0 10px;
+  border-color: rgba(112, 124, 151, 0.25);
+}

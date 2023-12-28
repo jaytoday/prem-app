@@ -1,26 +1,28 @@
-import downloadServiceStream from "modules/service/api/downloadServiceStream";
-import { useCallback, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+
+import type { DownloadArgs } from "../../controller/serviceController";
+import ServiceController from "../../controller/serviceController";
 
 const useDownloadServiceStream = () => {
-  const [progress, setProgress] = useState(-1);
-  const download = useCallback((serviceId: string, afterSuccess?: () => void) => {
-    downloadServiceStream(
+  const controller = ServiceController.getInstance();
+  return useMutation({
+    mutationFn: ({
       serviceId,
-      (error) => {
-        console.log(error);
-      },
-      (message) => {
-        console.log(message.status);
-        if ("percentage" in message) setProgress(message.percentage as number);
-      },
-      () => {
-        setProgress(-1);
-        afterSuccess && afterSuccess();
-      }
-    );
-  }, []);
-
-  return { progress, download };
+      binariesUrl,
+      weightsDirectoryUrl,
+      weightsFiles,
+      serviceType,
+      afterSuccess,
+    }: DownloadArgs & { serviceType: string }) =>
+      controller.download({
+        serviceId,
+        binariesUrl,
+        weightsDirectoryUrl,
+        weightsFiles,
+        serviceType,
+        afterSuccess,
+      }),
+  });
 };
 
 export default useDownloadServiceStream;

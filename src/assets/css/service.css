@@ -1,0 +1,188 @@
+.services-running::after {
+  content: "";
+  @apply absolute inset-0 rounded-[12px] rotate-180  pointer-events-none;
+  background: linear-gradient(
+    312.93deg,
+    rgba(245, 142, 142, 0.46) -4.82%,
+    rgba(245, 142, 142, 0.61) 8.19%,
+    rgba(245, 142, 142, 0.08) 61.08%
+  );
+}
+
+.services-running .service-card__logo {
+  @apply z-[1];
+}
+
+.service-detail {
+  @apply flex gap-4 max-lg:flex-wrap max-lg:gap-8;
+}
+
+.service-detail .card {
+  @apply rounded-md  max-lg:w-full max-md:!bg-none bg-gradient-default;
+}
+
+.services-header {
+  @apply relative;
+}
+
+.services-header button {
+  @apply !text-sm max-md:py-0 max-md:!text-[10px] max-md:h-6;
+}
+
+.services-header button.btn-primary {
+  @apply !rounded-[30px] md:!px-6 md:!h-[40px] max-md:!h-[27px] md:!text-[13px];
+}
+
+.service-detail h3 {
+  @apply max-md:!text-base;
+}
+
+.custom-service__markdown {
+  @apply md:backdrop-blur-[20px];
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.2);
+  background: linear-gradient(134deg, rgba(47, 47, 47, 0.4) 0%, rgba(103, 100, 98, 0.11) 100%);
+}
+
+.services-detail--header .mask-heading {
+  @apply max-sm:basis-full max-sm:flex max-sm:gap-2 max-sm:items-baseline max-sm:flex-wrap;
+}
+
+.services-detail--header .mask-heading span {
+  @apply text-base;
+}
+
+.services-detail--header .service-card__logo {
+  @apply max-md:basis-full;
+}
+
+.services-detail--header span:not(.mask-heading span) {
+  @apply max-md:text-[10px] max-md:py-0 max-md:px-3 max-md:h-6 max-md:flex max-md:items-center;
+}
+
+.services-detail-header {
+  @apply max-md:absolute max-md:top-[10px] max-md:right-0;
+}
+
+@screen lg {
+  .services-detail--header .mask-heading {
+    @apply flex flex-col;
+  }
+}
+
+.service-is__not-running svg {
+  @apply w-6 h-6;
+}
+
+p.service-is__not-running {
+  @apply text-grey-300 mt-[14px];
+}
+
+.service-is__not-running .warning-icon path:first-child {
+  @apply stroke-none;
+}
+
+.service-card {
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  @apply p-7 text-white gap-6 flex items-center relative bg-transparent rounded-[10px] xl:w-[330px] md:w-[265px] w-full max-md:max-w-[300px];
+}
+
+.service-card::before,
+.gradient-border::after {
+  content: "";
+  @apply absolute inset-0 rounded-[10px] p-[1.5px] pointer-events-none bg-gradient-border-bg;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.service-card__logo img {
+  @apply rounded-[11px] h-[54px] w-[54px] max-md:h-12 max-md:w-12 flex items-center justify-center;
+}
+
+.service-card h3 {
+  letter-spacing: 0.035em;
+  @apply text-sm md:text-lg font-bold leading-[25px] text-grey-300;
+}
+
+.service-card p {
+  @apply text-sm leading-[30px] text-grey-300;
+}
+
+.service-card .btn-outline-circle {
+  @apply border-[1.5px] border-grey-300 text-grey-300 mt-[55px] flex items-center;
+}
+
+.service-card .btn-outline-circle:hover {
+  @apply border-primary text-primary;
+}
+
+.service-card .btn-outline-circle:hover svg path {
+  @apply fill-primary;
+}
+
+.service-card-warning path:first-child {
+  @apply stroke-none;
+}
+
+.disabled--card {
+  background: linear-gradient(
+    131.09deg,
+    rgba(47, 47, 47, 0.2) 8.8%,
+    rgba(103, 100, 98, 0.055) 88.99%
+  );
+  box-shadow: 0 5px 28px -1.1671px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(23.342px);
+}
+
+.disabled--card.service-card__logo,
+.disabled--card.service-card h3 {
+  @apply opacity-60;
+}
+
+.disabled--card::before {
+  @apply hidden;
+}
+
+.red-badge {
+  @apply relative;
+}
+
+.red-badge::before {
+  content: "";
+  @apply bg-[#F24822] h-[10px] w-[10px] top-[-8px] right-[-4px] rounded-2xl absolute;
+}
+
+/**/
+
+.dropdown-menu {
+  @apply invisible py-2 rounded opacity-0 top-[50px] md:top-[65px] right-0 w-[154px] absolute translate-y-[-20px];
+  background: linear-gradient(134deg, rgba(47, 47, 47, 0.4) 0%, rgba(103, 100, 98, 0.11) 100%);
+  box-shadow: 0 4px 25px -1px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(21px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    visibility 0.4s;
+}
+
+.dropdown-menu.dropdown-active {
+  @apply opacity-100 visible translate-y-0 z-[11];
+}
+
+.dropdown-menu li {
+  @apply text-grey-200 px-0 flex w-full cursor-pointer  hover:text-primary-light;
+}
+
+.dropdown-menu li button {
+  @apply w-full h-[30px] px-5 text-left;
+}
+
+.dropdown-menu li:not(:first-child) {
+  @apply mt-2;
+}
+
+.dropdown-menu li.red-badge::before {
+  @apply top-[14px] right-[15px];
+}

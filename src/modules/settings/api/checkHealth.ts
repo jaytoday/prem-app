@@ -1,6 +1,8 @@
-import axios, { AxiosResponse } from "axios";
-import { Health } from "../types";
+import type { AxiosResponse } from "axios";
 
-const checkHealth = async (url: string): Promise<AxiosResponse<Health>> => axios.get(`${url}/v1/`);
+import api from "../../../shared/api/v1";
+import type { Health } from "../types";
+
+const checkHealth = async (): Promise<AxiosResponse<Health>> => api().get(`v1`);
 
 export default checkHealth;

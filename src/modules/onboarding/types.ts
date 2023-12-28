@@ -1,11 +1,11 @@
-import { ReactElement } from "react";
+import type { ReactElement } from "react";
 
 export type WelcomeScreenProps = {
   close: () => void;
 };
 
 export type SystemCheckProps = {
-  handleCheckIsDockerRunning: () => void;
+  handleCheckIsDockerRunning: () => Promise<void>;
   isDockerRunning: boolean;
   isServerRunning: boolean;
   back: () => void;

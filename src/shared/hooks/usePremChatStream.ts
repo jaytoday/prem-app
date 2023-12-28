@@ -1,23 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import type { AxiosError } from "axios";
+import type { PremChatResponse } from "modules/prem-chat/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { v4 as uuid } from "uuid";
 import { shallow } from "zustand/shallow";
-import { useNavigate } from "react-router-dom";
-import { PremChatResponse } from "modules/prem-chat/types";
-import usePremChatStore from "../store/prem-chat";
-import useService from "./useService";
-import { toast } from "react-toastify";
-import { getBackendUrlFromStore } from "shared/store/setting";
 
-const usePremChatStream = (serviceId: string, chatId: string | null): PremChatResponse => {
+import type { Service } from "../../modules/service/types";
+import usePremChatStore from "../store/prem-chat";
+
+import useGetService from "./useGetService";
+
+const usePremChatStream = (
+  serviceId: string,
+  serviceType: Service["serviceType"],
+  historyId: string | null,
+): PremChatResponse => {
   const [question, setQuestion] = useState("");
   const [tempQuestion, setTempQuestion] = useState("");
   const [isLoading, setLoading] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
   const navigate = useNavigate();
   const [pending, setPending] = useState<string | null>();
-  const { data: response } = useService(serviceId);
-  const service = response?.data;
+  const { data: service } = useGetService(serviceId, serviceType);
+  const abortController = useRef<AbortController>();
 
   const {
     history,
@@ -29,6 +36,10 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
     frequency_penalty,
     n,
     presence_penalty,
+    promptTemplate,
+    setPromptTemplate,
+    setChatServiceUrl,
+    chatServiceUrl,
   } = usePremChatStore(
     (state) => ({
       history: state.history,
@@ -40,18 +51,31 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
       frequency_penalty: state.frequency_penalty,
       n: state.n,
       presence_penalty: state.presence_penalty,
+      promptTemplate: state.promptTemplate,
+      setPromptTemplate: state.setPromptTemplate,
+      setChatServiceUrl: state.setChatServiceUrl,
+      chatServiceUrl: state.chatServiceUrl,
     }),
-    shallow
+    shallow,
   );
 
-  const messages = history.find((_history) => _history.id === chatId)?.messages || [];
+  useEffect(() => {
+    setChatServiceUrl(`${service?.baseUrl ?? ""}/v1/chat/completions`);
+    if (!promptTemplate) {
+      setPromptTemplate(service?.promptTemplate ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service]);
+
+  const messages = history.find((_history) => _history.id === historyId)?.messages || [];
 
   const onSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       processQuestion(question);
     },
-    [question]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [question],
   );
 
   const processQuestion = (question: string) => {
@@ -61,21 +85,18 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
     }
     setTempQuestion(query);
     setQuestion("");
-    const newMessage = { role: "user", content: query };
+    const newMessage = { role: "user", content: `${promptTemplate}${query}` };
     setPending(undefined);
     setLoading(true);
-    const ctrl = new AbortController();
+    abortController.current = new AbortController();
 
-    const backendUrl = new URL(getBackendUrlFromStore());
-    backendUrl.port = `${service?.runningPort!}`;
+    const headers = { "Content-Type": "application/json" };
 
     try {
-      fetchEventSource(`${backendUrl}api/v1/chat/completions`, {
+      fetchEventSource(chatServiceUrl, {
         method: "POST",
         openWhenHidden: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           model: serviceId,
           messages: [...messages, newMessage],
@@ -87,7 +108,7 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
           n,
           presence_penalty,
         }),
-        signal: ctrl.signal,
+        signal: abortController.current.signal,
         onmessage: (event) => {
           if (event.data === "[DONE]") {
             setLoading(false);
@@ -96,12 +117,13 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
             setPending((state) => (state ?? "") + (data.choices[0].delta.content || ""));
           }
         },
-        onerror: () => {
+        onerror: (err: AxiosError) => {
+          const errorMessage = `Something went wrong: ${err.message || ""}`;
           setLoading(false);
           setIsError(true);
           setTempQuestion("");
-          toast.error("Something went wrong");
-          throw new Error("Something went wrong");
+          toast.error(errorMessage);
+          throw new Error(errorMessage);
         },
       });
     } catch (e) {
@@ -112,13 +134,20 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
     }
   };
 
+  const abort = useCallback(() => {
+    abortController.current?.abort();
+    setLoading(false);
+    setTempQuestion("");
+  }, []);
+
   const onRegenerate = useCallback(() => {
     const newMessages = [...messages];
     const lastConversation = newMessages.splice(-2);
-    if (chatId) {
-      updateHistoryMessages(chatId, newMessages);
+    if (historyId) {
+      updateHistoryMessages(historyId, newMessages);
       processQuestion(lastConversation[0].content);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   const tempConversation = [
@@ -133,20 +162,21 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
     if (!isLoading && pending) {
       setTempQuestion("");
       setPending(undefined);
-      if (!chatId) {
-        const newChatId = uuid();
+      if (!historyId) {
+        const newHistoryId = uuid();
         addHistory({
-          id: newChatId,
+          id: newHistoryId,
           model: serviceId,
           title: tempConversation[0].content,
           messages: [...tempConversation],
           timestamp: Date.now(),
         });
-        navigate(`/prem-chat/${serviceId}/${newChatId}`);
+        navigate(`/prem-chat/${serviceId}/${serviceType}/${newHistoryId}`);
       } else {
-        updateHistoryMessages(chatId, [...messages, ...tempConversation]);
+        updateHistoryMessages(historyId, [...messages, ...tempConversation]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending, isLoading]);
 
   const chatMessages = useMemo(() => {
@@ -157,7 +187,16 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
       return [...messages, { role: "user", content: tempQuestion }];
     }
     return messages;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, pending, tempQuestion]);
+
+  const resetPromptTemplate = useCallback(() => {
+    setPromptTemplate(service?.promptTemplate || "");
+  }, [service, setPromptTemplate]);
+
+  const resetChatServiceUrl = useCallback(() => {
+    setChatServiceUrl(service?.baseUrl ?? "");
+  }, [service?.baseUrl, setChatServiceUrl]);
 
   return {
     chatMessages,
@@ -167,6 +206,9 @@ const usePremChatStream = (serviceId: string, chatId: string | null): PremChatRe
     isLoading,
     isError,
     onRegenerate,
+    resetPromptTemplate,
+    resetChatServiceUrl,
+    abort,
   };
 };
 

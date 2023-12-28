@@ -1,3 +1,7 @@
+import type { RightSidebarProps } from "shared/types";
+
+import type { Service } from "../service/types";
+
 export type Message = {
   role: string;
   content: string;
@@ -31,14 +35,9 @@ export type PremChatResponse = {
   isLoading: boolean;
   isError: boolean;
   onRegenerate: () => void;
-};
-
-export type HeaderProps = {
-  setRightSidebar: (value: boolean) => void;
-  rightSidebar: boolean;
-  hamburgerMenuOpen: boolean;
-  setHamburgerMenu: (value: boolean) => void;
-  title: string;
+  resetPromptTemplate: () => void;
+  resetChatServiceUrl: () => void;
+  abort: () => void;
 };
 
 export type InputBoxProps = {
@@ -49,20 +48,18 @@ export type InputBoxProps = {
 };
 
 export type RegenerateButtonProps = {
-  onRgenerateClick: () => void;
-};
-
-export type RightSidebarProps = {
-  setRightSidebar: (value: boolean) => void;
-};
-
-export type HamburgerMenuProps = {
-  setHamburgerMenu: (value: boolean) => void;
+  onRegenerateClick: () => void;
 };
 
 export type PremChatContainerProps = {
-  chatId: string | undefined;
-  isStreaming: boolean;
+  historyId?: string;
   serviceId: string;
+  serviceType: Service["serviceType"];
   serviceName: string;
+  isPetals: boolean;
 };
+
+export interface ChatRightSidebarProps extends RightSidebarProps {
+  resetPromptTemplate: () => void;
+  resetChatServiceUrl: () => void;
+}

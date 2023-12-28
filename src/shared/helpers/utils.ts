@@ -1,57 +1,99 @@
 import { invoke } from "@tauri-apps/api/tauri";
-import { ServiceInfoValue } from "modules/service-detail/types";
-import { Option, Service, ServiceStatus } from "modules/service/types";
-import { CSSObjectWithLabel, ControlProps } from "react-select";
+import type {
+  Option,
+  Service,
+  ServiceBinary,
+  ServiceDocker,
+  ServiceStatus,
+} from "modules/service/types";
+import type { ServiceInfoValue } from "modules/service-detail/types";
+import type { ControlProps, CSSObjectWithLabel } from "react-select";
 
-export const SERVICE_CHECK_REFETCH_INTERVAL = 1000;
+export const SERVICE_CHECK_REFETCH_INTERVAL = 10000;
 
-export const checkIsDockerRunning = async () => {
-  const check = await invoke("is_docker_running");
-  return Boolean(check);
+export const petalsModels = async (): Promise<string[]> => {
+  const models = await invoke("get_petals_models");
+  return models as string[];
 };
 
-export const checkIsContainerRunning = async () => {
-  const check = await invoke("is_container_running");
-  return Boolean(check);
-};
-
-export const checkIsServerRunning = async () => {
-  const url = getBackendUrl();
-  const response = await fetch(`${url}/v1/`, { method: "GET" });
-  return Boolean(response.ok);
-};
-
-export const runDockerContainer = async () => {
-  const containerRunning = await checkIsContainerRunning();
-  if (Boolean(containerRunning)) return;
-  await invoke("run_container");
+export const isIP = (host: string): boolean => {
+  if (host.includes("localhost")) return true;
+  /**
+   * ^ start of string
+   *   (?!0)         Assume IP cannot start with 0
+   *   (?!.*\.$)     Make sure string does not end with a dot
+   *   (
+   *     (
+   *     1?\d?\d|   A single digit, two digits, or 100-199
+   *     25[0-5]|   The numbers 250-255
+   *     2[0-4]\d   The numbers 200-249
+   *     )
+   *   \.|$ the number must be followed by either a dot or end-of-string - to match the last number
+   *   ){4}         Expect exactly four of these
+   * $ end of string
+   */
+  const ipAddressPattern = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
+  return ipAddressPattern.test(host);
 };
 
 export const isBrowserEnv = () => {
-  return import.meta.env.VITE_DESTINATION === "browser";
+  return !("__TAURI__" in window);
 };
 
 export const isDesktopEnv = () => {
-  return import.meta.env.VITE_DESTINATION === "desktop";
+  return "__TAURI__" in window;
+};
+
+export const isServiceBinary = (service: Service): service is ServiceBinary => {
+  return service && service.serviceType === "binary";
+};
+
+export const isServiceDocker = (service: Service): service is ServiceDocker => {
+  return service && service.serviceType === "docker";
+};
+
+export const swarmSupported = async () => {
+  const check = await invoke("is_swarm_supported");
+  return Boolean(check);
+};
+
+export const userName = async () => {
+  return await invoke("get_username");
+};
+
+export const checkSwarmModeRunning = async () => {
+  const check = await invoke("is_swarm_mode_running");
+  return Boolean(check);
+};
+
+export const stopSwarmMode = async () => {
+  await invoke("stop_swarm_mode");
+};
+
+export const createEnvironment = async () => {
+  await invoke("create_environment");
+};
+
+export const deleteEnvironment = async () => {
+  await invoke("delete_environment");
+};
+
+export const runSwarmMode = async (numBlocks: number, model: string, publicName: string) => {
+  const isSwarmMode = await checkSwarmModeRunning();
+  if (isSwarmMode) {
+    return;
+  }
+  await invoke("run_swarm", { numBlocks, model, publicName });
 };
 
 export const isPackaged = () => {
-  return import.meta.env.VITE_IS_PACKAGED === "true";
+  return (window as any).VITE_IS_PACKAGED === "true" || import.meta.env.VITE_IS_PACKAGED === "true";
 };
 
-export const isBackendSet = () => {
-  return import.meta.env.VITE_BACKEND_URL !== undefined && import.meta.env.VITE_BACKEND_URL !== "";
-};
-
-export const getBackendUrl = () => {
-  let backendURL = "http://localhost:54321";
-  if (isBackendSet()) {
-    backendURL = import.meta.env.VITE_BACKEND_URL;
-  }
-  if (isPackaged()) {
-    backendURL = `${window.location.protocol}//${window.location.host}/api`;
-  }
-  return backendURL;
+export const isProxyEnabled = () => {
+  return (
+    (window as any).VITE_PROXY_ENABLED === "true" || import.meta.env.VITE_PROXY_ENABLED === "true"
+  );
 };
 
 export const serviceSearchStyle = {
@@ -73,6 +115,17 @@ export const serviceSearchStyle = {
       },
     },
   }),
+  input: (base: CSSObjectWithLabel) => ({
+    ...base,
+    color: "#9597A3",
+  }),
+  placeholder: (base: CSSObjectWithLabel) => {
+    return {
+      ...base,
+      color: "#9597A3",
+    };
+  },
+
   multiValue: (base: CSSObjectWithLabel) => ({
     ...base,
     backgroundColor: "transparent",
@@ -80,7 +133,6 @@ export const serviceSearchStyle = {
     borderRadius: 4,
     padding: "3px 8px",
     alignItems: "center",
-    fontFamily: "ProximaNova-Regular",
   }),
   multiValueLabel: (base: CSSObjectWithLabel) => ({
     ...base,
@@ -112,7 +164,6 @@ export const serviceSearchStyle = {
     backgroundColor: "#20232b",
     color: "#EDEDED",
     fontSize: 12,
-    fontFamily: "ProximaNova-Regular",
     "&:hover": {
       backgroundColor: "#28282D",
     },
@@ -120,7 +171,11 @@ export const serviceSearchStyle = {
 };
 
 export const getServiceStatus = (service: Service): ServiceStatus => {
-  if (!service.supported) {
+  if ((!service.serviceType || service.serviceType === "docker") && isDesktopEnv()) {
+    return "docker_only";
+  } else if (service.comingSoon) {
+    return "coming_soon";
+  } else if (!service.supported) {
     return "not_supported";
   } else if (!service.enoughSystemMemory) {
     return "not_enough_system_memory";
@@ -134,15 +189,38 @@ export const getServiceStatus = (service: Service): ServiceStatus => {
   return "stopped";
 };
 
-export const formatInfo = (value: ServiceInfoValue) => {
+export const checkIfAccessible = (status: ServiceStatus): boolean => {
+  return ![
+    "docker_only",
+    "not_supported",
+    "not_enough_memory",
+    "not_enough_system_memory",
+    "coming_soon",
+  ].includes(status);
+};
+
+export const formatInfo = (value: any): ServiceInfoValue => {
   if (value === null) {
     return "-";
   } else if (typeof value === "boolean") {
     return value ? "Yes" : "No";
   }
+  if (typeof value === "object" && !Array.isArray(value) && value !== null) {
+    return Object.entries(value).flatMap(([k, v]) => `${k}=${v ?? "null"}`);
+  }
   return value;
 };
 
-export const DISPLAY_WELCOME_SCREEN_KEY = "display_welcome_screen";
+export const CHAT_ID = "chat";
+export const DIFFUSER_ID = "diffuser";
+export const AUDIO_TO_TEXT_ID = "audio-to-text";
+export const TEXT_TO_AUDIO_ID = "text-to-audio";
+export const UPSCALER_ID = "upscaler";
+export const CODER_ID = "coder";
 
-export const SYSTEM_MEMORY_LIMIT = 16;
+export const isDeveloperMode = () => {
+  return (window as any).VITE_DEVELOPER_MODE === "1" || import.meta.env.VITE_DEVELOPER_MODE === "1";
+};
+
+export const AUDIO_TAB = "AUDIO_TAB";
+export const RECORD_TAB = "RECORD_TAB";

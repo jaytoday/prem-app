@@ -1,15 +1,23 @@
 import axios from "axios";
-import { getBackendUrlFromStore } from "shared/store/setting";
+
+import { isProxyEnabled } from "../helpers/utils";
+import useSettingStore from "../store/setting";
 
 const api = () => {
-  const client = axios.create({
-    baseURL: getBackendUrlFromStore(),
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const isIP = useSettingStore.getState().isIP;
+  const headers = { "Content-Type": "application/json" };
+  let baseURL = useSettingStore.getState().backendUrl;
+  if (isProxyEnabled()) {
+    if (isIP) {
+      baseURL = `${useSettingStore.getState().backendUrl}premd/`;
+    } else {
+      baseURL = `${window.location.protocol}//premd.${window.location.host}/`;
+    }
+  }
+  return axios.create({
+    baseURL,
+    headers,
   });
-
-  return client;
 };
 
 export default api;

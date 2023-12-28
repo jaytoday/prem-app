@@ -1,28 +1,23 @@
-import { useCallback, useState } from "react";
+import React from "react";
 import WarningIcon from "shared/components/WarningIcon";
-import WarningModal from "./WarningModal";
-import { ServiceStatus, WarningServiceStateProps } from "../types";
 import WarningShapeIcon from "shared/components/WarningShapeIcon";
-import useBodyLock from "shared/hooks/useBodyLock";
 
-const WarningServiceState = ({ status, memoryRequirements }: WarningServiceStateProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { bodyLocked, setBodyLocked } = useBodyLock();
+import type { ServiceStatus, WarningServiceStateProps } from "../types";
 
-  const openWarningModal = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setIsOpen(true);
-    setBodyLocked(!bodyLocked);
-  };
+import WarningModal from "./WarningModal";
 
-  const closeWarningModal = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setIsOpen(false);
-    setBodyLocked(false);
-  }, []);
-
+const WarningServiceState = ({
+  status,
+  memoryRequirements,
+  closeWarningModal,
+  isWarningModalOpen,
+}: WarningServiceStateProps) => {
   const getServiceWarningDescription = (status: ServiceStatus) => {
     switch (status) {
+      case "docker_only":
+        return "This model is only available on Prem Server installation";
+      case "coming_soon":
+        return "Service will be available soon";
       case "not_supported":
         return "This service is not supported on your device";
       case "not_enough_memory":
@@ -38,26 +33,28 @@ const WarningServiceState = ({ status, memoryRequirements }: WarningServiceState
     switch (status) {
       case "not_enough_memory":
         return <WarningShapeIcon />;
+      case "docker_only":
       case "not_supported":
       case "not_enough_system_memory":
-        return <WarningIcon />;
+        return <WarningIcon className="warning-icon" />;
       default:
-        return <WarningIcon />;
+        return <WarningIcon className="warning-icon" />;
     }
   };
 
+  const title = status === "coming_soon" ? "Coming soon" : "Warning";
+
   return (
     <>
-      <button onClick={(e) => openWarningModal(e)}>
-        <WarningIcon />
-      </button>
-      {isOpen && (
+      <WarningIcon />
+      {isWarningModalOpen && (
         <WarningModal
           description={getServiceWarningDescription(status)}
           onCancel={closeWarningModal}
           onOk={closeWarningModal}
           icon={getServiceWarningIcon(status)}
-          isOpen={isOpen}
+          isOpen={isWarningModalOpen}
+          title={title}
         />
       )}
     </>

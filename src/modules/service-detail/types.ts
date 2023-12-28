@@ -1,10 +1,11 @@
-import { Service, ServiceStatus } from "modules/service/types";
+import type { Service, ServiceStatus } from "modules/service/types";
 
 export type ServiceHeaderProps = {
   icon: string;
   title: string;
   tags: string[];
   subtitle: string;
+  isInBeta: boolean;
 };
 
 export type ServiceDocumentationProps = {
@@ -21,7 +22,8 @@ export type ServiceGeneralInfoProps = {
 
 export type ServiceResourceBarsProps = {
   serviceId: string;
+  serviceType: Service["serviceType"];
   status: ServiceStatus;
 };
 
-export type ServiceInfoValue = string | number | null | boolean;
+export type ServiceInfoValue = string | number | null | boolean | string[];
